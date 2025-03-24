@@ -16,7 +16,7 @@ switch (command) {
   }
   case "cat-file": {
     const hash = process.argv.at(-1)
-    readGitFile(hash);
+    catFile(hash);
     break
   }
   default:
@@ -32,7 +32,7 @@ function createGitDirectory() {
   console.log("Initialized git directory");
 }
 
-async function readGitFile(hash){
+async function catFile(hash){
   const content = await fsPromises.readFile(path.join(process.cwd(), ".git", "objects", hash.slice(0, 2), hash.slice(2)));
   const dataUnzipped = await deflate(content)
   const res = dataUnzipped.toString().split('\0')[1];
