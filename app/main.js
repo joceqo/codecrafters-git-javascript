@@ -25,6 +25,11 @@ switch (command) {
     hashObject(path)
     break
   }
+  case "ls-tree":{
+    const hash = process.argv.at(-1)
+    listTree(hash)
+    break
+  }
   default:
     throw new Error(`Unknown command ${command}`);
 }
@@ -68,4 +73,42 @@ async function hashObject(filepath){
   }
 
   process.stdout.write(hash)
+}
+
+function getTreeEntries(data){
+  console.log('data', data)
+  const indexOfHeader = data.indexOf('\0')
+  const [_header, content] = [data.substring(0, indexOfHeader), data.substring(indexOfHeader)]
+  const indexOfEntries = []
+  for(let i = 0; i < content.length; i++){
+    if(content[i] === '\0'){
+      indexOfEntries.push(i+19)
+    }
+  }
+  const entries = []
+  for(let i = 0; i<indexOfEntries.length - 1; i++){
+    for(let j = 1; j<indexOfEntries.length; j++){
+      const start = indexOfEntries[i];
+      const end = indexOfEntries[j];
+      entries.push(content.substring(start, end))
+    }
+  }
+  entries.unshift(content.substring(0, indexOfEntries[0]))
+
+  return entries
+}
+
+function getEntryName(entry){
+  return entry.split('\0')[0].split(' ').at(-1)
+}
+
+async function listTree(hash){
+  const data = await fsPromises.readFile(path.join(process.cwd(), ".git", "objects", hash.slice(0, 2), hash.slice(2)));
+  const dataUnzipped = await inflate(data)
+  const entries = getTreeEntries(dataUnzipped.toString())
+  console.log('entries', entries)
+  
+  const names = entries.map(getEntryName)
+
+  process.stdout.write(names.join('\n'))
 }
